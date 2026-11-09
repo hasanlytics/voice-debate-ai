@@ -39,7 +39,7 @@ export async function downloadProjectZip(): Promise<void> {
       scripts: {
         dev: "tsx server.ts",
         build: "vite build",
-        start: "node --loader tsx server.ts",
+        start: "node server.ts",
         preview: "vite preview"
       },
       dependencies: {
