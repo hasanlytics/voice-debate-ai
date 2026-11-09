@@ -1,0 +1,6 @@
+{
+  "name": "Voice Debate AI - বাংলা ভয়েস বিতর্ক",
+  "description": "AI চালিত বাংলা লাইভ ভয়েস বিতর্ক প্ল্যাটফর্ম। রম্য ও প্রাঞ্জল বাংলা কণ্ঠস্বরে সরাসরি যুক্তিতর্ক ও বিচারক মূল্যায়ন।",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

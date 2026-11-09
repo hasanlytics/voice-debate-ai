@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Hind Siliguri', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background-color: #0a0d1d;
+    color: #f1f2f8;
+    overflow-x: hidden;
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.3;
+  }
+  100% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+
+.pulse-ring-active {
+  animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+}
+
+@keyframes wave-1 {
+  0%, 100% { height: 4px; }
+  50% { height: 16px; }
+}
+@keyframes wave-2 {
+  0%, 100% { height: 8px; }
+  50% { height: 22px; }
+}
+@keyframes wave-3 {
+  0%, 100% { height: 14px; }
+  50% { height: 28px; }
+}
+@keyframes wave-4 {
+  0%, 100% { height: 6px; }
+  50% { height: 20px; }
+}
+@keyframes wave-5 {
+  0%, 100% { height: 3px; }
+  50% { height: 12px; }
+}
+
+.animate-wave-1 { animation: wave-1 0.7s ease-in-out infinite; }
+.animate-wave-2 { animation: wave-2 0.8s ease-in-out infinite 0.1s; }
+.animate-wave-3 { animation: wave-3 0.6s ease-in-out infinite 0.2s; }
+.animate-wave-4 { animation: wave-4 0.75s ease-in-out infinite 0.15s; }
+.animate-wave-5 { animation: wave-5 0.65s ease-in-out infinite 0.05s; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
