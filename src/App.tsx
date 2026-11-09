@@ -31,11 +31,13 @@ import {
   ChevronDown,
   ChevronUp,
   LogOut,
+  ExternalLink,
+  ShieldAlert,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
-import { auth, db, signInWithGoogle, logOut, testFirestoreConnection } from './firebase';
+import { auth, db, signInWithGoogle, logOut, testFirestoreConnection, FIREBASE_PROJECT_ID } from './firebase';
 import { initGA, trackEvent, trackPageView } from './utils/analytics';
 
 interface Message {
@@ -240,6 +242,20 @@ export default function App() {
   // Status message
   const [statusText, setStatusText] = useState<string>('মাইকে চাপুন আর আপনার যুক্তি বলুন');
 
+  // Toast & Auth Domain Notice State
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [showAuthDomainModal, setShowAuthDomainModal] = useState<boolean>(false);
+  const [domainCopied, setDomainCopied] = useState<boolean>(false);
+  const toastTimeoutRef = useRef<any>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    toastTimeoutRef.current = setTimeout(() => {
+      setToastMessage(null);
+    }, 4500);
+  };
+
   // Refs
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
   const recognitionRef = useRef<any>(null);
@@ -256,7 +272,7 @@ export default function App() {
     if (!file) return;
 
     if (file.size > 3 * 1024 * 1024) {
-      alert('ছবির আকার ৩ MB-র কম রাখুন!');
+      showToast('ছবির আকার ৩ MB-র কম রাখুন!');
       return;
     }
 
@@ -349,11 +365,16 @@ export default function App() {
         }
 
         trackEvent('login', { method: 'google', email: user.email });
+        showToast(`স্বাগতম, ${user.displayName || user.email || 'বক্তা'}! গুগল দিয়ে সাইন ইন সম্পন্ন হয়েছে।`);
       }
     } catch (err: any) {
       console.error('Google Sign-In Error:', err);
-      if (err?.code !== 'auth/popup-closed-by-user') {
-        alert('গুগল দিয়ে সাইন ইন করতে সমস্যা হয়েছে: ' + (err?.message || 'আবার চেষ্টা করুন'));
+      if (err?.code === 'auth/unauthorized-domain') {
+        setShowAuthDomainModal(true);
+      } else if (err?.code === 'auth/popup-closed-by-user') {
+        // user voluntarily closed popup
+      } else {
+        showToast('গুগল দিয়ে সাইন ইন ত্রুটি: ' + (err?.message || 'আবার চেষ্টা করুন'));
       }
     }
   };
@@ -972,7 +993,7 @@ export default function App() {
   // Fetch AI Judge Evaluation and Save to LocalStorage History
   const requestJudgement = async () => {
     if (messages.length < 2) {
-      alert('রায় পাওয়ার জন্য অন্তত একটি রাউন্ড তর্ক সম্পন্ন করুন!');
+      showToast('রায় পাওয়ার জন্য অন্তত একটি রাউন্ড তর্ক সম্পন্ন করুন!');
       return;
     }
 
@@ -2777,6 +2798,124 @@ export default function App() {
                 className="px-4 py-2.5 rounded-xl bg-[#11142a] border border-[#2a2f4d] text-[#c8cbdf] hover:text-white text-xs font-semibold transition-all cursor-pointer"
               >
                 বাতিল
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[100] max-w-[90vw] sm:max-w-md w-auto">
+          <div className="px-4 py-2.5 rounded-2xl bg-[#171b30] border border-[#3b4269] text-white shadow-2xl flex items-center gap-3 backdrop-blur-md">
+            <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+            <span className="text-xs sm:text-sm font-medium">{toastMessage}</span>
+            <button
+              type="button"
+              onClick={() => setToastMessage(null)}
+              className="p-1 rounded-lg text-[#9a9db5] hover:text-white hover:bg-[#202542] transition-colors"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* AUTH UNAUTHORIZED DOMAIN MODAL */}
+      {showAuthDomainModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn">
+          <div className="bg-[#171b30] border border-[#2a2f4d] rounded-3xl p-6 sm:p-7 max-w-lg w-full shadow-2xl relative">
+            <button
+              type="button"
+              onClick={() => setShowAuthDomainModal(false)}
+              className="absolute top-5 right-5 p-1.5 rounded-full text-[#9a9db5] hover:text-white hover:bg-[#202542] transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-3.5">
+              <div className="w-11 h-11 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-300 shadow-lg">
+                <ShieldAlert className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base sm:text-lg font-bold text-white">Google Sign-in ডোমেন অনুমতি প্রয়োজন</h3>
+                <span className="text-xs text-amber-400 font-medium">Firebase: auth/unauthorized-domain</span>
+              </div>
+            </div>
+
+            <div className="text-xs text-[#c8cbdf] leading-relaxed mb-4 bg-[#11142a] p-3.5 rounded-2xl border border-[#2a2f4d] space-y-2">
+              <p>
+                আপনার অ্যাপটি বর্তমানে <strong className="text-white font-mono text-cyan-300">{typeof window !== 'undefined' ? window.location.hostname : 'onrender.com'}</strong> ডোমেনে চলছে।
+              </p>
+              <p className="text-[#9a9db5]">
+                Google Firebase-এর নিরাপত্তা নিয়মানুযায়ী নতুন যেকোনো হোস্টিং ডোমেন (Render, Vercel ইত্যাদি) থেকে Google Sign-In চালু করতে Firebase Console-এ সেই ডোমেনটি ১ বার <strong>Authorized domain</strong> হিসেবে যুক্ত করতে হয়।
+              </p>
+            </div>
+
+            {/* Current Domain Box with 1-Click Copy */}
+            <div className="mb-4">
+              <label className="text-[11px] font-semibold text-[#9a9db5] block mb-1.5">
+                আপনার বর্তমান হোস্টিং ডোমেন:
+              </label>
+              <div className="flex items-center gap-2 p-2.5 rounded-xl bg-[#0d1022] border border-[#2a2f4d]">
+                <code className="text-xs sm:text-sm font-mono text-teal-300 flex-1 truncate select-all">
+                  {typeof window !== 'undefined' ? window.location.hostname : 'voice-debate-ai-osqa.onrender.com'}
+                </code>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (typeof window !== 'undefined') {
+                      navigator.clipboard.writeText(window.location.hostname);
+                      setDomainCopied(true);
+                      setTimeout(() => setDomainCopied(false), 3000);
+                    }
+                  }}
+                  className="px-2.5 py-1.5 rounded-lg bg-[#202542] hover:bg-[#2c3358] text-white text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
+                >
+                  {domainCopied ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-400" />
+                      <span className="text-emerald-400">কপি হয়েছে!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>ডোমেন কপি</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Step-by-step resolution */}
+            <div className="mb-5 bg-[#14182e] p-3.5 rounded-xl border border-[#242948] text-xs space-y-2 text-[#c8cbdf]">
+              <div className="font-bold text-white flex items-center gap-1.5 text-xs">
+                <span>⚡ ১ মিনিটে ঠিক করার সহজ ধাপ:</span>
+              </div>
+              <ol className="list-decimal list-inside space-y-1 text-[#9a9db5] text-[11px] sm:text-xs">
+                <li>নিচের <strong className="text-white">Firebase Console খুলুন</strong> বাটনে চাপ দিন।</li>
+                <li>সেটিংস পাতার <strong className="text-white">Authorized domains</strong> সেকশনে <strong className="text-teal-300">Add domain</strong> বাটনে ক্লিক করুন।</li>
+                <li>কপি করা ডোমেনটি পেস্ট করে <strong className="text-white">Save</strong> দিন। ব্যাস, সাথে সাথে সাইন-ইন কাজ করবে!</li>
+              </ol>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center gap-2.5">
+              <a
+                href={`https://console.firebase.google.com/project/${FIREBASE_PROJECT_ID}/authentication/settings`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full sm:flex-1 py-2.5 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 text-gray-950 font-bold text-xs sm:text-sm shadow-lg flex items-center justify-center gap-2 transition-all cursor-pointer text-center"
+              >
+                <span>Firebase Console খুলুন</span>
+                <ExternalLink className="w-4 h-4" />
+              </a>
+
+              <button
+                type="button"
+                onClick={() => setShowAuthDomainModal(false)}
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-[#11142a] hover:bg-[#202542] border border-[#2a2f4d] text-white text-xs font-semibold transition-all cursor-pointer"
+              >
+                গেস্ট হিসেবে বিতর্ক করুন
               </button>
             </div>
           </div>
