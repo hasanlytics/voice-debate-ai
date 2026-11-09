@@ -1,0 +1,121 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Registered user profile tracked via Google authentication",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "User UID from Firebase Authentication",
+          "maxLength": 128
+        },
+        "email": {
+          "type": "string",
+          "description": "User Google email address",
+          "maxLength": 320
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User name from Google account or custom input",
+          "maxLength": 100
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "URL to user Google avatar image",
+          "maxLength": 1000
+        },
+        "debatesCount": {
+          "type": "number",
+          "description": "Total number of debates participated in"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the user account record was created"
+        },
+        "lastLoginAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the user last logged in"
+        }
+      },
+      "required": ["id", "email", "displayName"]
+    },
+    "Debate": {
+      "title": "Debate",
+      "description": "Completed debate session record and adjudication scorecard",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique debate record identifier",
+          "maxLength": 128
+        },
+        "userId": {
+          "type": "string",
+          "description": "User UID who participated in this debate",
+          "maxLength": 128
+        },
+        "topic": {
+          "type": "string",
+          "description": "Debate topic argued",
+          "maxLength": 200
+        },
+        "userSide": {
+          "type": "string",
+          "enum": ["for", "against"],
+          "description": "User stance in debate"
+        },
+        "style": {
+          "type": "string",
+          "description": "Debate AI persona style",
+          "maxLength": 50
+        },
+        "winner": {
+          "type": "string",
+          "enum": ["User", "AI", "Tie"],
+          "description": "Adjudicator verdict winner"
+        },
+        "winnerTitle": {
+          "type": "string",
+          "description": "Headline verdict by Chief Adjudicator",
+          "maxLength": 150
+        },
+        "userScore": {
+          "type": "number",
+          "description": "Score awarded to user out of 100"
+        },
+        "aiScore": {
+          "type": "number",
+          "description": "Score awarded to Debate AI out of 100"
+        },
+        "summary": {
+          "type": "string",
+          "description": "Observations summary from the adjudicator",
+          "maxLength": 1500
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the debate was completed and scored"
+        }
+      },
+      "required": ["id", "userId", "topic", "userSide", "style", "winner", "userScore", "aiScore"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/User"
+      },
+      "description": "User document mapped by Firebase Auth UID"
+    },
+    "/debates/{debateId}": {
+      "schema": {
+        "$ref": "#/entities/Debate"
+      },
+      "description": "Debate scorecard and record mapped by debate ID"
+    }
+  }
+}

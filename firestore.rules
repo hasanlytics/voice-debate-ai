@@ -1,0 +1,76 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 1. Global Safety Net: Default-deny all unlisted paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Validation for User profile document
+    function isValidUser(data) {
+      return data.keys().hasAll(['id', 'email', 'displayName']) &&
+             data.keys().hasOnly(['id', 'email', 'displayName', 'photoURL', 'debatesCount', 'createdAt', 'lastLoginAt']) &&
+             data.id is string && data.id == request.auth.uid &&
+             data.email is string && data.email.size() <= 320 &&
+             data.displayName is string && data.displayName.size() <= 100 &&
+             (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 1000)) &&
+             (!('debatesCount' in data) || (data.debatesCount is number && data.debatesCount >= 0));
+    }
+
+    // Validation for Debate document
+    function isValidDebate(data) {
+      return data.keys().hasAll(['id', 'userId', 'topic', 'userSide', 'style', 'winner', 'userScore', 'aiScore']) &&
+             data.keys().hasOnly(['id', 'userId', 'topic', 'userSide', 'style', 'winner', 'winnerTitle', 'userScore', 'aiScore', 'summary', 'createdAt']) &&
+             data.id is string && isValidId(data.id) &&
+             data.userId is string && data.userId == request.auth.uid &&
+             data.topic is string && data.topic.size() <= 200 &&
+             data.userSide in ['for', 'against'] &&
+             data.winner in ['User', 'AI', 'Tie'] &&
+             data.userScore is number && data.userScore >= 0 && data.userScore <= 100 &&
+             data.aiScore is number && data.aiScore >= 0 && data.aiScore <= 100 &&
+             data.style is string && data.style.size() <= 50 &&
+             (!('winnerTitle' in data) || (data.winnerTitle is string && data.winnerTitle.size() <= 150)) &&
+             (!('summary' in data) || (data.summary is string && data.summary.size() <= 1500));
+    }
+
+    // Collection: /users/{userId}
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(incoming()) && incoming().id == userId;
+      allow update: if isOwner(userId) && isValidUser(incoming()) && incoming().id == existing().id;
+      allow delete: if false;
+    }
+
+    // Collection: /debates/{debateId}
+    match /debates/{debateId} {
+      allow get: if isSignedIn() && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidDebate(incoming()) && incoming().userId == request.auth.uid;
+      allow update: if false;
+      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+    }
+  }
+}
