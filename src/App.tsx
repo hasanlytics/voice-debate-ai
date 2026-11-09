@@ -30,10 +30,8 @@ import {
   X,
   ChevronDown,
   ChevronUp,
-  FolderDown,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { downloadProjectZip } from './utils/projectZip';
 
 interface Message {
   sender: 'user' | 'ai';
@@ -220,10 +218,6 @@ export default function App() {
   // Share & Certificate State
   const [isGeneratingCard, setIsGeneratingCard] = useState<boolean>(false);
   const [shareFeedback, setShareFeedback] = useState<string | null>(null);
-
-  // ZIP Download status
-  const [isDownloadingZip, setIsDownloadingZip] = useState<boolean>(false);
-  const [zipDownloadMessage, setZipDownloadMessage] = useState<string | null>(null);
 
   // Gemini API Key Management
   const [userApiKey, setUserApiKey] = useState<string>(() => {
@@ -1153,22 +1147,6 @@ export default function App() {
     setTimeout(() => setShareFeedback(null), 3000);
   };
 
-  // ZIP Download Handler
-  const handleDownloadProjectZip = async () => {
-    setIsDownloadingZip(true);
-    setZipDownloadMessage('প্রজেক্ট ফাইলগুলো প্যাক ও ডাউনলোড করা হচ্ছে...');
-    try {
-      await downloadProjectZip();
-      setZipDownloadMessage('✅ ডাউনলোড সফলভাবে শুরু হয়েছে! ডাউনলোড ফোল্ডার চেক করুন।');
-      setTimeout(() => setZipDownloadMessage(null), 3500);
-    } catch (err: any) {
-      setZipDownloadMessage('❌ ডাউনলোডে সমস্যা হয়েছে: ' + (err?.message || 'আবার চেষ্টা করুন'));
-      setTimeout(() => setZipDownloadMessage(null), 3500);
-    } finally {
-      setIsDownloadingZip(false);
-    }
-  };
-
   // Delete single history item
   const deleteHistoryItem = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -1299,19 +1277,6 @@ export default function App() {
               )}
             </button>
 
-            {/* Guaranteed Working Project ZIP Download Button */}
-            <button
-              type="button"
-              onClick={handleDownloadProjectZip}
-              disabled={isDownloadingZip}
-              className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-teal-500/20 to-emerald-500/20 hover:from-teal-500/30 hover:to-emerald-500/30 border border-teal-500/40 text-teal-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
-              title="সম্পূর্ণ প্রজেক্টের কোড ZIP ডাউনলোড করুন"
-            >
-              <FolderDown className={`w-3.5 h-3.5 text-teal-400 ${isDownloadingZip ? 'animate-bounce' : ''}`} />
-              <span className="hidden sm:inline">{isDownloadingZip ? 'ডাউনলোড হচ্ছে...' : 'প্রজেক্ট ZIP'}</span>
-              <span className="sm:hidden">ZIP</span>
-            </button>
-
             {/* API Key Modal Button */}
             <button
               type="button"
@@ -1332,13 +1297,6 @@ export default function App() {
             </button>
           </div>
         </div>
-
-        {/* Floating Download Notification Banner */}
-        {zipDownloadMessage && (
-          <div className="max-w-md mx-auto mt-2 text-center text-xs py-1.5 px-3 rounded-xl bg-[#171b30] border border-teal-500/50 text-teal-300 animate-fadeIn shadow-lg">
-            {zipDownloadMessage}
-          </div>
-        )}
       </header>
 
       {/* SCREEN 1: TOPIC & PERSONA SETUP */}
@@ -1630,32 +1588,11 @@ export default function App() {
             <button
               type="button"
               onClick={() => startDebate()}
-              className="w-full py-4 rounded-xl bg-gradient-to-r from-[#7c5cff] to-[#ff5c8a] text-white font-bold text-base sm:text-lg shadow-[0_8px_25px_rgba(124,92,255,0.4)] hover:opacity-95 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2 mb-4"
+              className="w-full py-4 rounded-xl bg-gradient-to-r from-[#7c5cff] to-[#ff5c8a] text-white font-bold text-base sm:text-lg shadow-[0_8px_25px_rgba(124,92,255,0.4)] hover:opacity-95 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2"
             >
               <span>তর্ক শুরু করো</span>
               <span className="text-xl">→</span>
             </button>
-
-            {/* Complete Project Download Card at bottom of setup */}
-            <div className="p-3.5 rounded-2xl bg-[#11142a] border border-[#2a2f4d] flex items-center justify-between gap-3 text-xs">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-teal-500/20 border border-teal-500/40 flex items-center justify-center text-teal-300">
-                  <FolderDown className="w-4 h-4" />
-                </div>
-                <div>
-                  <span className="font-bold text-white block">সম্পূর্ণ সোর্স কোড ZIP</span>
-                  <span className="text-[11px] text-[#9a9db5]">অফলাইনে লোকাল পিসিতে চালানোর জন্য</span>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={handleDownloadProjectZip}
-                disabled={isDownloadingZip}
-                className="px-3 py-1.5 rounded-xl bg-teal-500/20 hover:bg-teal-500/30 border border-teal-500/40 text-teal-300 font-semibold transition-all cursor-pointer shrink-0"
-              >
-                {isDownloadingZip ? 'প্যাকিং...' : 'ডাউনলোড'}
-              </button>
-            </div>
           </div>
         </div>
       )}
