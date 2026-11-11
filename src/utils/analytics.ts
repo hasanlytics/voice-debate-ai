@@ -7,8 +7,8 @@ declare global {
   }
 }
 
-// Default GA4 Measurement ID (can be configured via VITE_GA_MEASUREMENT_ID in .env)
-export const DEFAULT_GA_ID = import.meta.env.VITE_GA_MEASUREMENT_ID || 'G-DEBATEAI01';
+// Default GA4 Measurement ID
+export const DEFAULT_GA_ID = import.meta.env.VITE_GA_MEASUREMENT_ID || 'G-VZG2JBT9VY';
 
 /**
  * Initialize Google Analytics (GA4)
